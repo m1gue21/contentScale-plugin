@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: SmoothStitute
+Plugin Name: contentScale
 Plugin URI: google.com
 Description: Plugin para contar la cantidad de veces que una palabra se repite en todas las páginas.
 Version: 0.0.1
@@ -89,7 +89,8 @@ function word_counter_search()
         }
         echo '</table>';
         echo '<br>';
-        echo 'Valor de reemplazo: <input type="text" name="replacement" placeholder="Ingresa el nuevo valor">';
+        echo 'Accion: <input type="text" name="replacement" placeholder="Ingresa el nuevo valor">';
+        echo 'Condicion: <input type="text" name="condition" placeholder="ingresa la condicion">';
         echo '<br><br>';
         echo '<input type="submit" name="replace_submit" value="Reemplazar">';
         echo '</form>';

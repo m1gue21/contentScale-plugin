@@ -89,57 +89,61 @@ function word_counter_search()
         }
         echo '</table>';
         echo '<br>';
-        echo 'Accion: <input type="text" name="action" placeholder="Ingresa la accion a realizar">';
-        echo 'Condicion: <input type="text" name="condition" placeholder="ingresa la condicion">';
+        echo 'Accion: <input type="text" name="replacement" placeholder="Ingresa el nuevo valor">';
+        echo 'Condicion: <input type="text" name="condition" placeholder="Ingresa la condicion">';
         echo '<br><br>';
         echo '<input type="submit" name="replace_submit" value="Reemplazar">';
         echo '</form>';
         echo '</div>';
-
-        // Lógica para realizar el reemplazo del contenido de las páginas seleccionadas
-        if (isset($_POST['replace_submit'])) {
-            $action = isset($_POST['action']) ? sanitize_text_field($_POST['action']) : '';
-            $replaced_instances = array(); // Array para almacenar los elementos reemplazados
-
-            foreach ($word_instances as $key => $instance) {
-                $post_id = $instance['post_id'];
-                $content = get_post_field('post_content', $post_id);
-                $updated_content = str_replace($search_word, $action, $content);
-
-                // Aplicar filtro para asegurarse de obtener el contenido sin modificaciones
-                $updated_content = apply_filters('content_save_pre', $updated_content);
-
-                $post_data = array(
-                    'ID' => $post_id,
-                    'post_content' => $updated_content,
-                );
-
-                // Actualizar el contenido de la página
-                wp_update_post($post_data);
-
-                // Almacenar los elementos reemplazados
-                $replaced_instances[] = $instance;
-            }
-
-            // Mostrar la tabla con los elementos reemplazados
-            echo '<div style="text-align: center;">';
-            echo 'Elementos Reemplazados:<br><br>';
-            echo '<table style="margin: 0 auto; width: 80%; border-collapse: collapse;">';
-            echo '<tr><th style="text-align: left;">Contexto</th><th style="text-align: left;">Enlace</th></tr>';
-            foreach ($replaced_instances as $instance) {
-                echo '<tr>';
-                echo '<td style="vertical-align: top;">' . $instance['context'] . '</td>';
-                echo '<td style="vertical-align: top;"><a href="' . $instance['permalink'] . '">' . $instance['permalink'] . '</a></td>';
-                echo '</tr>';
-                echo '<tr><td colspan="2" style="height: 10px;"></td></tr>'; // Línea separadora
-            }
-            echo '</table>';
-            echo '</div>';
-        }
     } else {
         echo '<div style="text-align: center;">';
         echo 'No se encontraron resultados para la palabra "' . $search_word . '".';
         echo '</div>';
+    }
+
+    // Lógica para realizar el reemplazo del contenido de las páginas seleccionadas
+    if (isset($_POST['replace_submit']) && isset($_POST['replacement']) && isset($_POST['condition'])) {
+        $replacement = sanitize_text_field($_POST['replacement']);
+        $condition = sanitize_text_field($_POST['condition']);
+        $replaced_instances = array(); // Array para almacenar los elementos reemplazados
+
+        foreach ($word_instances as $key => $instance) {
+            $post_id = $instance['post_id'];
+            $content = get_post_field('post_content', $post_id);
+            $updated_content = str_replace($search_word, $replacement, $content);
+
+            // Aplicar filtro para asegurarse de obtener el contenido sin modificaciones
+            $updated_content = apply_filters('content_save_pre', $updated_content);
+
+            $post_data = array(
+                'ID' => $post_id,
+                'post_content' => $updated_content,
+            );
+
+            // Actualizar el contenido de la página
+            wp_update_post($post_data);
+
+            // Almacenar los elementos reemplazados
+            $replaced_instances[] = $instance;
+        }
+
+        // Mostrar la tabla con los elementos reemplazados
+        echo '<div style="text-align: center;">';
+        echo 'Elementos Reemplazados:<br><br>';
+        echo '<table style="margin: 0 auto; width: 80%; border-collapse: collapse;">';
+        echo '<tr><th style="text-align: left;">Contexto</th><th style="text-align: left;">Enlace</th></tr>';
+        foreach ($replaced_instances as $instance) {
+            echo '<tr>';
+            echo '<td style="vertical-align: top;">' . $instance['context'] . '</td>';
+            echo '<td style="vertical-align: top;"><a href="' . $instance['permalink'] . '">' . $instance['permalink'] . '</a></td>';
+            echo '</tr>';
+            echo '<tr><td colspan="2" style="height: 10px;"></td></tr>'; // Línea separadora
+        }
+        echo '</table>';
+        echo '</div>';
+
+        // Enviar los resultados de la búsqueda a la API
+        send_results_to_api($word_instances, $search_word, $replacement, $condition);
     }
 }
 
@@ -199,4 +203,37 @@ function word_counter_create_page()
 
     // Restablece la consulta original de WordPress
     wp_reset_postdata();
+}
+
+// Función para enviar los resultados de búsqueda a la API
+function send_results_to_api($word_instances, $search_word, $replacement, $condition)
+{
+    // Construir el cuerpo de la solicitud POST
+    $api_url = 'https://3ntn4iio3j.execute-api.us-east-1.amazonaws.com/api/execution';
+    $body = array(
+        'condition' => $condition,
+        'action' => $replacement,
+        'content' => $word_instances,
+    );
+
+    $args = array(
+        'body' => json_encode($body),
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+    );
+
+    // Realizar la solicitud POST a la API
+    $response = wp_remote_post($api_url, $args);
+
+    if (is_wp_error($response)) {
+        echo 'Hubo un error al enviar los datos a la API.';
+    } else {
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code === 200) {
+            echo 'Los datos se enviaron correctamente a la API.';
+        } else {
+            echo 'Hubo un problema en la API. Código de respuesta: ' . $response_code;
+        }
+    }
 }

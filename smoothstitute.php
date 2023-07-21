@@ -89,7 +89,7 @@ function word_counter_search()
         }
         echo '</table>';
         echo '<br>';
-        echo 'Accion: <input type="text" name="replacement" placeholder="Ingresa el nuevo valor">';
+        echo 'Accion: <input type="text" name="action" placeholder="Ingresa la accion a realizar">';
         echo 'Condicion: <input type="text" name="condition" placeholder="ingresa la condicion">';
         echo '<br><br>';
         echo '<input type="submit" name="replace_submit" value="Reemplazar">';
@@ -98,13 +98,13 @@ function word_counter_search()
 
         // Lógica para realizar el reemplazo del contenido de las páginas seleccionadas
         if (isset($_POST['replace_submit'])) {
-            $replacement = isset($_POST['replacement']) ? sanitize_text_field($_POST['replacement']) : '';
+            $action = isset($_POST['action']) ? sanitize_text_field($_POST['action']) : '';
             $replaced_instances = array(); // Array para almacenar los elementos reemplazados
 
             foreach ($word_instances as $key => $instance) {
                 $post_id = $instance['post_id'];
                 $content = get_post_field('post_content', $post_id);
-                $updated_content = str_replace($search_word, $replacement, $content);
+                $updated_content = str_replace($search_word, $action, $content);
 
                 // Aplicar filtro para asegurarse de obtener el contenido sin modificaciones
                 $updated_content = apply_filters('content_save_pre', $updated_content);
@@ -148,8 +148,8 @@ add_action('admin_menu', 'word_counter_add_menu_link');
 function word_counter_add_menu_link()
 {
     add_menu_page(
-        'SmoothStitute',
-        'SmoothStitute',
+        'ContentScale',
+        'ContentScale',
         'manage_options',
         'word-counter',
         'word_counter_page',
@@ -162,7 +162,7 @@ function word_counter_add_menu_link()
 function word_counter_page()
 {
     echo '<div style="text-align: center;">';
-    echo '<h1>Buscador SmoothStitute</h1>';
+    echo '<h1>ContentScale Searcher</h1>';
     echo do_shortcode('[word_counter]');
     echo '</div>';
 }
